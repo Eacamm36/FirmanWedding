@@ -389,34 +389,75 @@ for (
     );
 
 }
+
+// Fungsi untuk memicu animasi saat elemen muncul di layar (scroll)
+function initScrollAnimation() {
+    const animatedItems = document.querySelectorAll('.animate-item');
+
+    const observer = new IntersectionObserver((entries, observer) => {
+        entries.forEach((entry, index) => {
+            if (entry.isIntersecting) {
+                // Beri sedikit jeda delay antar item jika tampil bersamaan
+                setTimeout(() => {
+                    entry.target.classList.add('show');
+                }, index * 100); 
+
+                // Hentikan pemantauan elemen yang sudah muncul
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.15 // Animasi berjalan saat 15% bagian elemen sudah masuk ke layar
+    });
+
+    animatedItems.forEach(item => {
+        observer.observe(item);
+    });
+}
 document.addEventListener('DOMContentLoaded', function () {
+    const opening = document.getElementById('opening');
+    const mainContent = document.getElementById('mainContent');
+    const openBtn = document.getElementById('openInvitation');
     const bgMusic = document.getElementById('bgMusic');
     const musicBtn = document.getElementById('musicButton');
-    const openBtn = document.getElementById('openInvitation');
     let isPlaying = false;
 
-    // Fungsi Play / Pause Audio
+    // Fungsi Toggle Play / Pause Audio
     function toggleMusic() {
         if (isPlaying) {
             bgMusic.pause();
             musicBtn.classList.remove('playing');
         } else {
-            bgMusic.play();
+            bgMusic.play().catch(() => {});
             musicBtn.classList.add('playing');
         }
         isPlaying = !isPlaying;
     }
 
-    // Putar musik otomatis saat tombol "Buka Undangan" diklik
+    // Aksi Klik Buka Undangan
     if (openBtn) {
         openBtn.addEventListener('click', function () {
-            bgMusic.play();
-            isPlaying = true;
-            musicBtn.classList.add('playing');
+            // 1. Animasi Fade-Out pada sampul opening
+            opening.classList.add('fade-out');
+
+            // 2. Putar Musik
+            bgMusic.play().then(() => {
+                isPlaying = true;
+                musicBtn.classList.add('playing');
+            }).catch(err => console.log('Autoplay diblokir browser:', err));
+
+            // 3. Setelah animasi fade-out selesai, sembunyikan opening dan tampilkan konten utama
+            setTimeout(function () {
+                opening.classList.add('d-none');
+                mainContent.classList.remove('d-none');
+                mainContent.classList.add('fade-in');
+            }, 800); // 800ms sesuai dengan durasi transition opacity di CSS
+
+            initScrollAnimation();
         });
     }
 
-    // Toggle musik lewat tombol floating
+    // Toggle Musik lewat Tombol Floating
     if (musicBtn) {
         musicBtn.addEventListener('click', toggleMusic);
     }
