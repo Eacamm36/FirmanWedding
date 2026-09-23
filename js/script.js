@@ -116,52 +116,44 @@ function initScrollAnimation() {
    MAIN INITIALIZATION (OPEN INVITATION & MUSIC CONTROL)
 ========================================================= */
 document.addEventListener('DOMContentLoaded', function () {
+    const openBtn = document.getElementById('openInvitation');
+    const musicBtn = document.getElementById('musicButton');
     const opening = document.getElementById('opening');
     const mainContent = document.getElementById('mainContent');
-    const openBtn = document.getElementById('openInvitation');
-    const bgMusic = document.getElementById('bgMusic');
-    const musicBtn = document.getElementById('musicButton');
     const navbar = document.querySelector('.wedding-navbar');
 
+    // 1. Inisialisasi Audio langsung via JavaScript Object
+    const audio = new Audio('./assets/audio.mp3');
+    audio.loop = true;
     let isPlaying = false;
 
-    // Fungsi untuk memutar / menghentikan lagu
+    // Fungsi Toggle Musik
     function toggleMusic() {
-        if (!bgMusic) return;
-
         if (isPlaying) {
-            bgMusic.pause();
+            audio.pause();
             if (musicBtn) musicBtn.classList.remove('playing');
             isPlaying = false;
         } else {
-            bgMusic.play().then(() => {
+            audio.play().then(() => {
                 if (musicBtn) musicBtn.classList.add('playing');
                 isPlaying = true;
-            }).catch(err => {
-                console.log('Audio gagal diputar:', err);
-            });
+            }).catch(err => console.log("Gagal play:", err));
         }
     }
 
-    // Event Klik "Buka Undangan"
+    // 2. Event Klik Buka Undangan
     if (openBtn) {
         openBtn.addEventListener('click', function () {
-            // 1. Animasi smooth fade-out pada layar opening
-            if (opening) {
-                opening.classList.add('fade-out');
-            }
+            // Putar lagu langsung saat diklik
+            audio.play().then(() => {
+                isPlaying = true;
+                if (musicBtn) musicBtn.classList.add('playing');
+            }).catch(err => {
+                console.log("Autoplay diblokir:", err);
+            });
 
-            // 2. Putar Musik (Memicu Play saat Interaksi Pertama Pengguna di HP)
-            if (bgMusic) {
-                bgMusic.play().then(() => {
-                    isPlaying = true;
-                    if (musicBtn) musicBtn.classList.add('playing');
-                }).catch(err => {
-                    console.log('Autoplay diblokir browser HP:', err);
-                });
-            }
-
-            // 3. Tampilkan Konten Utama & Navbar
+            // Animasi Transisi Undangan
+            if (opening) opening.classList.add('fade-out');
             if (mainContent) {
                 mainContent.classList.remove('d-none');
                 mainContent.classList.add('fade-in');
@@ -171,23 +163,23 @@ document.addEventListener('DOMContentLoaded', function () {
                 navbar.classList.add('fade-in');
             }
 
-            // Kembalikan kemampuan scroll pada layar
             document.body.style.overflow = "auto";
 
-            // Sembunyikan elemen opening dari DOM setelah animasi fade-out selesai
             setTimeout(function () {
                 if (opening) opening.style.display = "none";
             }, 800);
 
-            // Inisialisasi animasi item saat di-scroll
-            initScrollAnimation();
+            if (typeof initScrollAnimation === 'function') {
+                initScrollAnimation();
+            }
         });
     }
 
-    // Tombol Floating Pengatur Musik
+    // Event Tombol Musik Floating
     if (musicBtn) {
         musicBtn.addEventListener('click', toggleMusic);
     }
+});
 
 
     /* =========================================================
