@@ -1,179 +1,380 @@
+
 /* =========================================================
-   UNDANGAN FIRMAN & PUTRI — JavaScript
-   ========================================================= */
-document.addEventListener("DOMContentLoaded", () => {
-    const $ = (selector, root = document) => root.querySelector(selector);
+   GUEST NAME
+========================================================= */
 
-    const opening = $("#opening");
-    const openButton = $("#openInvitation");
-    const mainContent = $("#mainContent");
-    const bgMusic = $("#bgMusic");
-    const musicButton = $("#musicButton");
-    const backTop = $("#backTop");
+(function () {
+    const params = new URLSearchParams(window.location.search);
+    const guest = params.get("to");
+    const guestElement = document.getElementById("guestName");
 
-    // Nama tamu dari URL: ?to=Nama%20Tamu. Gunakan textContent untuk keamanan.
-    const guestName = $("#guestName");
-    const guest = new URLSearchParams(window.location.search).get("to");
-    if (guest && guestName) guestName.textContent = guest.trim().slice(0, 120);
+    if (guest && guestElement) {
+        guestElement.textContent = guest;
+    }
+})();
 
-    // Cegah halaman bergulir di belakang sampul.
-    document.body.style.overflow = opening ? "hidden" : "auto";
 
-    let musicPlaying = false;
-    const setMusicState = (playing) => {
-        musicPlaying = playing;
-        musicButton?.classList.toggle("playing", playing);
-        musicButton?.setAttribute("aria-pressed", String(playing));
-        musicButton?.setAttribute("aria-label", playing ? "Jeda musik" : "Putar musik");
-        const icon = $("i", musicButton || document.createElement("button"));
-        if (icon) icon.className = playing ? "bi bi-pause-fill" : "bi bi-music-note";
-    };
+/* =========================================================
+   OPEN INVITATION
+========================================================= */
 
-    const playMusic = async () => {
-        if (!bgMusic) return;
-        try {
-            await bgMusic.play();
-            setMusicState(true);
-        } catch (error) {
-            setMusicState(false);
-            console.warn("Musik tidak dapat diputar. Periksa file assets/audio.mp3 dan izin browser.", error);
-        }
-    };
+const openButton = document.getElementById("openInvitation");
+const opening = document.getElementById("opening");
+const mainContent = document.getElementById("mainContent");
 
-    const pauseMusic = () => {
-        bgMusic?.pause();
-        setMusicState(false);
-    };
+if (openButton) {
+    openButton.addEventListener("click", function () {
+        if (opening) opening.classList.add("hide");
+        if (mainContent) mainContent.classList.remove("d-none");
 
-    // Audio bisa dihentikan oleh browser/perangkat; sinkronkan tombol dengan kondisi nyata.
-    bgMusic?.addEventListener("pause", () => setMusicState(false));
-    bgMusic?.addEventListener("play", () => setMusicState(true));
-    musicButton?.addEventListener("click", () => musicPlaying ? pauseMusic() : playMusic());
-
-    // Satu-satunya handler untuk membuka sampul; klik merupakan gestur pengguna agar audio diizinkan.
-    openButton?.addEventListener("click", async () => {
-        if (opening) {
-            opening.classList.add("hide");
-            opening.setAttribute("aria-hidden", "true");
-        }
-        mainContent?.classList.remove("d-none");
-        mainContent?.classList.add("fade-in");
         document.body.style.overflow = "auto";
-        await playMusic();
-        window.setTimeout(() => {
+
+        setTimeout(function () {
             if (opening) opening.style.display = "none";
-        }, 850);
+        }, 900);
     });
+}
 
-    // Countdown dengan zona waktu WIB (UTC+7), tanggal resepsi 1 Oktober 2026 pukul 08.00.
-    const weddingTime = new Date("2026-10-01T08:00:00+07:00").getTime();
-    const twoDigits = (value) => String(value).padStart(2, "0");
-    const updateCountdown = () => {
-        const ids = ["days", "hours", "minutes", "seconds"];
-        const nodes = ids.map(id => $("#" + id));
-        if (nodes.some(node => !node)) return;
 
-        const remaining = weddingTime - Date.now();
-        if (remaining <= 0) {
-            nodes.forEach(node => node.textContent = "00");
-            return;
-        }
-        const days = Math.floor(remaining / 86400000);
-        const hours = Math.floor((remaining % 86400000) / 3600000);
-        const minutes = Math.floor((remaining % 3600000) / 60000);
-        const seconds = Math.floor((remaining % 60000) / 1000);
-        [String(days).padStart(2, "0"), twoDigits(hours), twoDigits(minutes), twoDigits(seconds)]
-            .forEach((value, index) => nodes[index].textContent = value);
-    };
-    updateCountdown();
-    window.setInterval(updateCountdown, 1000);
+/* =========================================================
+   COUNTDOWN
+========================================================= */
 
-    // Salin rekening dengan fallback untuk browser lama/non-secure context.
-    window.copyAccount = async () => {
-        const account = $("#accountNumber")?.textContent?.trim();
-        const message = $("#copyMessage");
-        if (!account || !message) return;
-        let copied = false;
-        try {
-            if (navigator.clipboard?.writeText) {
-                await navigator.clipboard.writeText(account);
-                copied = true;
-            }
-        } catch (_) { /* lanjut ke fallback */ }
+// Tanggal resepsi: 1 Oktober 2026 pukul 08.00 WIB
+const weddingDate = new Date("October 01, 2026 08:00:00 GMT+0700").getTime();
 
-        if (!copied) {
-            const temporary = document.createElement("textarea");
-            temporary.value = account;
-            temporary.setAttribute("readonly", "");
-            temporary.style.position = "fixed";
-            temporary.style.opacity = "0";
-            document.body.appendChild(temporary);
-            temporary.select();
-            try { copied = document.execCommand("copy"); } catch (_) { copied = false; }
-            temporary.remove();
-        }
-        message.textContent = copied
-            ? "Nomor rekening berhasil disalin."
-            : "Gagal menyalin otomatis. Silakan salin nomor rekening secara manual.";
-        message.style.display = "block";
-        window.setTimeout(() => { message.style.display = "none"; }, 3000);
-    };
+function formatNumber(number) {
+    return number < 10 ? "0" + number : number;
+}
 
-    // RSVP saat ini hanya validasi dan umpan balik lokal; belum mengirim data ke siapa pun.
-    const rsvpForm = $("#rsvpForm");
-    rsvpForm?.addEventListener("submit", (event) => {
-        event.preventDefault();
-        if (!rsvpForm.reportValidity()) return;
-        const success = $("#rsvpSuccess");
-        if (success) {
-            success.classList.remove("d-none");
-            success.scrollIntoView({ behavior: "smooth", block: "nearest" });
-        }
-        rsvpForm.reset();
-    });
+function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = weddingDate - now;
 
-    // Tombol kembali ke atas.
-    const updateBackTop = () => {
-        if (backTop) backTop.style.display = window.scrollY > 500 ? "block" : "none";
-    };
-    window.addEventListener("scroll", updateBackTop, { passive: true });
-    updateBackTop();
-    backTop?.addEventListener("click", () => window.scrollTo({ top: 0, behavior: "smooth" }));
+    const daysElement = document.getElementById("days");
+    const hoursElement = document.getElementById("hours");
+    const minutesElement = document.getElementById("minutes");
+    const secondsElement = document.getElementById("seconds");
 
-    // Tutup navbar Bootstrap pada layar kecil setelah memilih tautan.
-    document.querySelectorAll(".nav-link").forEach(link => {
-        link.addEventListener("click", () => {
-            const collapse = $("#navbarWedding");
-            if (collapse?.classList.contains("show") && window.bootstrap?.Collapse) {
-                window.bootstrap.Collapse.getOrCreateInstance(collapse).hide();
-            }
-        });
-    });
-
-    // Animasi saat elemen masuk viewport, dengan fallback jika IntersectionObserver tidak tersedia.
-    const animatedItems = document.querySelectorAll(".animate-item");
-    if ("IntersectionObserver" in window) {
-        const observer = new IntersectionObserver((entries, obs) => {
-            entries.forEach(entry => {
-                if (entry.isIntersecting) {
-                    entry.target.classList.add("show");
-                    obs.unobserve(entry.target);
-                }
-            });
-        }, { threshold: 0.15 });
-        animatedItems.forEach(item => observer.observe(item));
-    } else {
-        animatedItems.forEach(item => item.classList.add("show"));
+    if (distance <= 0) {
+        if (daysElement) daysElement.textContent = "00";
+        if (hoursElement) hoursElement.textContent = "00";
+        if (minutesElement) minutesElement.textContent = "00";
+        if (secondsElement) secondsElement.textContent = "00";
+        return;
     }
 
-    // Lightbox galeri Bootstrap.
-    document.querySelectorAll(".gallery img[data-bs-target='#imageModal']").forEach(image => {
-        image.addEventListener("click", () => {
-            const modalImage = $("#modalImage");
-            if (modalImage) {
-                modalImage.src = image.currentSrc || image.src;
-                modalImage.alt = image.alt || "Foto galeri";
-            }
+    const days = Math.floor(distance / (1000 * 60 * 60 * 24));
+    const hours = Math.floor(
+        (distance % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60)
+    );
+    const minutes = Math.floor(
+        (distance % (1000 * 60 * 60)) / (1000 * 60)
+    );
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    if (daysElement) daysElement.textContent = formatNumber(days);
+    if (hoursElement) hoursElement.textContent = formatNumber(hours);
+    if (minutesElement) minutesElement.textContent = formatNumber(minutes);
+    if (secondsElement) secondsElement.textContent = formatNumber(seconds);
+}
+
+updateCountdown();
+setInterval(updateCountdown, 1000);
+
+
+/* =========================================================
+   COPY ACCOUNT
+========================================================= */
+
+function copyAccount() {
+    const accountElement = document.getElementById("accountNumber");
+
+    if (!accountElement) return;
+
+    const account = accountElement.innerText.trim();
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(account)
+            .then(showCopyMessage)
+            .catch(function () {
+                fallbackCopy(account);
+            });
+    } else {
+        fallbackCopy(account);
+    }
+}
+
+function fallbackCopy(text) {
+    const textarea = document.createElement("textarea");
+
+    textarea.value = text;
+    textarea.style.position = "fixed";
+    textarea.style.opacity = "0";
+
+    document.body.appendChild(textarea);
+    textarea.select();
+
+    try {
+        document.execCommand("copy");
+        showCopyMessage();
+    } catch (error) {
+        console.error("Gagal menyalin nomor rekening:", error);
+    }
+
+    document.body.removeChild(textarea);
+}
+
+function showCopyMessage() {
+    const message = document.getElementById("copyMessage");
+
+    if (!message) return;
+
+    message.style.display = "block";
+
+    setTimeout(function () {
+        message.style.display = "none";
+    }, 2500);
+}
+
+
+/* =========================================================
+   RSVP
+========================================================= */
+
+const rsvpForm = document.getElementById("rsvpForm");
+
+if (rsvpForm) {
+    rsvpForm.addEventListener("submit", function (event) {
+        event.preventDefault();
+
+        const success = document.getElementById("rsvpSuccess");
+
+        if (success) {
+            success.classList.remove("d-none");
+        }
+
+        rsvpForm.reset();
+    });
+}
+
+
+/* =========================================================
+   BACK TO TOP
+========================================================= */
+
+const backTop = document.getElementById("backTop");
+
+window.addEventListener("scroll", function () {
+    if (!backTop) return;
+
+    if (document.documentElement.scrollTop > 500) {
+        backTop.style.display = "block";
+    } else {
+        backTop.style.display = "none";
+    }
+});
+
+if (backTop) {
+    backTop.addEventListener("click", function () {
+        window.scrollTo({
+            top: 0,
+            behavior: "smooth"
         });
     });
+}
+
+
+/* =========================================================
+   NAVBAR AUTO CLOSE MOBILE
+========================================================= */
+
+const navLinks = document.querySelectorAll(".nav-link");
+const navbarCollapse = document.querySelector(".navbar-collapse");
+
+navLinks.forEach(function (link) {
+    link.addEventListener("click", function () {
+        if (
+            navbarCollapse &&
+            navbarCollapse.classList.contains("show") &&
+            typeof bootstrap !== "undefined"
+        ) {
+            const bsCollapse = bootstrap.Collapse.getOrCreateInstance(navbarCollapse);
+            bsCollapse.hide();
+        }
+    });
+});
+
+
+/* =========================================================
+   SCROLL ANIMATION
+========================================================= */
+
+function initScrollAnimation() {
+    const animatedItems = document.querySelectorAll(".animate-item");
+
+    if (!("IntersectionObserver" in window)) {
+        animatedItems.forEach(function (item) {
+            item.classList.add("show");
+        });
+        return;
+    }
+
+    const observer = new IntersectionObserver(function (entries, observer) {
+        entries.forEach(function (entry, index) {
+            if (entry.isIntersecting) {
+                setTimeout(function () {
+                    entry.target.classList.add("show");
+                }, index * 100);
+
+                observer.unobserve(entry.target);
+            }
+        });
+    }, {
+        threshold: 0.15
+    });
+
+    animatedItems.forEach(function (item) {
+        observer.observe(item);
+    });
+}
+
+document.addEventListener("DOMContentLoaded", initScrollAnimation);
+
+
+/* =========================================================
+   MUSIC PLAYER
+========================================================= */
+
+document.addEventListener("DOMContentLoaded", function () {
+    const openingScreen = document.getElementById("opening");
+    const content = document.getElementById("mainContent");
+    const openBtn = document.getElementById("openInvitation");
+    const bgMusic = document.getElementById("bgMusic");
+    const musicBtn = document.getElementById("musicButton");
+
+    let isPlaying = false;
+
+    /*
+       Memulai musik dari detik ke-9.
+       currentTime diatur sebelum audio diputar.
+    */
+    async function playMusic() {
+        if (!bgMusic) return;
+
+        try {
+            // Pastikan durasi audio tersedia sebelum mengatur posisi.
+            if (bgMusic.readyState === 0) {
+                await new Promise(function (resolve) {
+                    bgMusic.addEventListener("loadedmetadata", resolve, {
+                        once: true
+                    });
+                    bgMusic.load();
+                });
+            }
+
+            const startAt = 9;
+
+            if (Number.isFinite(bgMusic.duration) && bgMusic.duration > 0) {
+                bgMusic.currentTime = Math.min(startAt, Math.max(0, bgMusic.duration - 0.1));
+            } else {
+                bgMusic.currentTime = startAt;
+            }
+
+            await bgMusic.play();
+
+            isPlaying = true;
+
+            if (musicBtn) {
+                musicBtn.classList.add("playing");
+            }
+        } catch (error) {
+            console.log("Musik tidak dapat diputar:", error);
+            isPlaying = false;
+
+            if (musicBtn) {
+                musicBtn.classList.remove("playing");
+            }
+        }
+    }
+
+    function pauseMusic() {
+        if (!bgMusic) return;
+
+        bgMusic.pause();
+        isPlaying = false;
+
+        if (musicBtn) {
+            musicBtn.classList.remove("playing");
+        }
+    }
+
+    function toggleMusic() {
+        if (!bgMusic) return;
+
+        if (isPlaying) {
+            pauseMusic();
+        } else {
+            /*
+              Saat tombol play ditekan kembali setelah pause,
+              musik dilanjutkan dari posisi terakhir.
+            */
+            bgMusic.play()
+                .then(function () {
+                    isPlaying = true;
+
+                    if (musicBtn) {
+                        musicBtn.classList.add("playing");
+                    }
+                })
+                .catch(function (error) {
+                    console.log("Musik tidak dapat diputar:", error);
+                });
+        }
+    }
+
+    // Tombol buka undangan sekaligus memulai musik dari detik ke-9.
+    if (openBtn) {
+        openBtn.addEventListener("click", function () {
+            if (openingScreen) {
+                openingScreen.classList.add("fade-out");
+            }
+
+            playMusic();
+
+            setTimeout(function () {
+                if (openingScreen) {
+                    openingScreen.classList.add("d-none");
+                }
+
+                if (content) {
+                    content.classList.remove("d-none");
+                    content.classList.add("fade-in");
+                }
+            }, 800);
+        });
+    }
+
+    // Tombol musik mengatur play dan pause.
+    if (musicBtn) {
+        musicBtn.addEventListener("click", toggleMusic);
+    }
+
+    // Sinkronkan status tombol jika audio berubah dari kontrol lain.
+    if (bgMusic) {
+        bgMusic.addEventListener("play", function () {
+            isPlaying = true;
+            if (musicBtn) musicBtn.classList.add("playing");
+        });
+
+        bgMusic.addEventListener("pause", function () {
+            isPlaying = false;
+            if (musicBtn) musicBtn.classList.remove("playing");
+        });
+
+        bgMusic.addEventListener("ended", function () {
+            isPlaying = false;
+            if (musicBtn) musicBtn.classList.remove("playing");
+        });
+    }
 });
