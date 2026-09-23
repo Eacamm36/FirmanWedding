@@ -414,6 +414,9 @@ function initScrollAnimation() {
         observer.observe(item);
     });
 }
+/* =========================================================
+   OPEN INVITATION & MUSIC & SCROLL ANIMATION
+========================================================= */
 document.addEventListener('DOMContentLoaded', function () {
     const opening = document.getElementById('opening');
     const mainContent = document.getElementById('mainContent');
@@ -424,12 +427,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     // Fungsi Toggle Play / Pause Audio
     function toggleMusic() {
+        if (!bgMusic) return;
+        
         if (isPlaying) {
             bgMusic.pause();
             musicBtn.classList.remove('playing');
         } else {
-            bgMusic.play().catch(() => {});
-            musicBtn.classList.add('playing');
+            bgMusic.play().then(() => {
+                musicBtn.classList.add('playing');
+            }).catch(err => console.log('Audio gagal diputar:', err));
         }
         isPlaying = !isPlaying;
     }
@@ -438,21 +444,32 @@ document.addEventListener('DOMContentLoaded', function () {
     if (openBtn) {
         openBtn.addEventListener('click', function () {
             // 1. Animasi Fade-Out pada sampul opening
-            opening.classList.add('fade-out');
+            if (opening) {
+                opening.classList.add('hide');
+                opening.classList.add('fade-out');
+            }
 
-            // 2. Putar Musik
-            bgMusic.play().then(() => {
-                isPlaying = true;
-                musicBtn.classList.add('playing');
-            }).catch(err => console.log('Autoplay diblokir browser:', err));
+            // 2. Putar Musik saat Buka Undangan
+            if (bgMusic) {
+                bgMusic.play().then(() => {
+                    isPlaying = true;
+                    if (musicBtn) musicBtn.classList.add('playing');
+                }).catch(err => console.log('Autoplay diblokir browser:', err));
+            }
 
-            // 3. Setelah animasi fade-out selesai, sembunyikan opening dan tampilkan konten utama
-            setTimeout(function () {
-                opening.classList.add('d-none');
+            // 3. Tampilkan Konten Utama
+            if (mainContent) {
                 mainContent.classList.remove('d-none');
                 mainContent.classList.add('fade-in');
-            }, 800); // 800ms sesuai dengan durasi transition opacity di CSS
+            }
+            document.body.style.overflow = "auto";
 
+            // Sembunyikan opening setelah transisi selesai
+            setTimeout(function () {
+                if (opening) opening.style.display = "none";
+            }, 800);
+
+            // Jalankan animasi scroll
             initScrollAnimation();
         });
     }
@@ -462,3 +479,38 @@ document.addEventListener('DOMContentLoaded', function () {
         musicBtn.addEventListener('click', toggleMusic);
     }
 });
+
+/* =========================================================
+   BACK TO TOP
+========================================================= */
+var backTop = document.getElementById("backTop");
+
+window.addEventListener("scroll", function () {
+    if (document.documentElement.scrollTop > 500) {
+        if (backTop) backTop.style.display = "block";
+    } else {
+        if (backTop) backTop.style.display = "none";
+    }
+});
+
+if (backTop) {
+    backTop.addEventListener("click", function () {
+        window.scrollTo(0, 0);
+    });
+}
+
+
+/* =========================================================
+   NAVBAR AUTO CLOSE MOBILE
+========================================================= */
+var navLinks = document.querySelectorAll(".nav-link");
+var navbarCollapse = document.querySelector(".navbar-collapse");
+
+for (var i = 0; i < navLinks.length; i++) {
+    navLinks[i].addEventListener("click", function () {
+        if (navbarCollapse && navbarCollapse.classList.contains("show")) {
+            var bsCollapse = new bootstrap.Collapse(navbarCollapse, { toggle: true });
+            bsCollapse.hide();
+        }
+    });
+}
