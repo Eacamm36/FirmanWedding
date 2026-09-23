@@ -443,6 +443,8 @@ document.addEventListener('DOMContentLoaded', function () {
     // Aksi Klik Buka Undangan
     if (openBtn) {
         openBtn.addEventListener('click', function () {
+            const navbar = document.getElementById('weddingNavbar');
+
             // 1. Animasi Fade-Out pada sampul opening
             if (opening) {
                 opening.classList.add('hide');
@@ -457,11 +459,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 }).catch(err => console.log('Autoplay diblokir browser:', err));
             }
 
-            // 3. Tampilkan Konten Utama
+            // 3. Tampilkan Konten Utama & Navbar
             if (mainContent) {
                 mainContent.classList.remove('d-none');
                 mainContent.classList.add('fade-in');
             }
+            if (navbar) {
+                navbar.classList.remove('d-none'); // Tampilkan navbar
+                navbar.classList.add('fade-in');
+            }
+            
             document.body.style.overflow = "auto";
 
             // Sembunyikan opening setelah transisi selesai
