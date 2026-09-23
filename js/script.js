@@ -485,6 +485,18 @@ document.addEventListener('DOMContentLoaded', function () {
     if (musicBtn) {
         musicBtn.addEventListener('click', toggleMusic);
     }
+
+   if (musicBtn && bgMusic) {
+    musicBtn.addEventListener('click', function () {
+        if (bgMusic.paused) {
+            bgMusic.play();
+            musicBtn.classList.add('playing');
+        } else {
+            bgMusic.pause();
+            musicBtn.classList.remove('playing');
+        }
+    });
+}
 });
 
 /* =========================================================
